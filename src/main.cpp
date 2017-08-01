@@ -2,6 +2,8 @@
 #include <SD.h>
 #include <Wire.h>
 #include <RTClib.h>
+#include <Adafruit_ASFcore.h>
+#include <Adafruit_SleepyDog.h>
 
 void initSerial(int PT) {
   Serial.begin(PT);
@@ -25,12 +27,14 @@ void setup() {
 }
 
 void loop() {
-  initSD(10);
   String dataString = "";
   for (int analogPin = 0; analogPin < 6; analogPin++) {
     int sensor = analogRead(analogPin);
-    dataString += String(sensor);
-    dataString += ",";
+    int mapper = map(sensor, 1, 770, 1, 13000);
+    dataString += String(mapper);
+    if (analogPin < 5) {
+      dataString += ",";
+    }
   }
 
   File dataFile = SD.open("datalog.txt", FILE_WRITE);
