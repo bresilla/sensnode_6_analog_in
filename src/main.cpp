@@ -25,13 +25,12 @@ void setup() {
 }
 
 void loop() {
+  initSD(10);
   String dataString = "";
   for (int analogPin = 0; analogPin < 6; analogPin++) {
     int sensor = analogRead(analogPin);
     dataString += String(sensor);
-    if (analogPin < 2) {
-      dataString += ",";
-    }
+    dataString += ",";
   }
 
   File dataFile = SD.open("datalog.txt", FILE_WRITE);
