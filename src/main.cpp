@@ -6,6 +6,38 @@
 #include <Adafruit_SleepyDog.h>
 #include <WiFi101.h>
 
+void initSerial(int PT) {
+  Serial.begin(PT);
+  while (!Serial) {
+    Serial.println("Serial failed, or not connected");
+    delay(1000);
+    return;
+  }
+}
+void initSD(int CS) {
+  while (!SD.begin(CS)) {
+    Serial.println("Card failed, or not present");
+    delay(1000);
+    return;
+  }
+}
+void initWiFi(char ssid[], char pass[]){
+  while (!WiFi.begin(ssid, pass)) {
+    Serial.println("WiFi failed, or not connected");
+    delay(1000);
+  }
+}
+void sleepTime(float minutes, bool Dog){
+  int millisec = minutes * 60000;
+  if (Dog){
+    Watchdog.sleep(millisec);
+  }
+  else{
+    delay(millisec);
+  }
+}
+
+
 String readSensor(int PINS){
   String dataString = "";
   for (int analogPin = 0; analogPin < PINS; analogPin++) {
@@ -34,39 +66,7 @@ void writeFILE(String dataString) {
 void writeSERIAL(String dataString) {
 	Serial.println(dataString);
 }
-void sleepTime(float minutes, bool Dog){
-  int millisec = minutes * 60000;
-  if (Dog){
-    Watchdog.sleep(millisec);
-  }
-  else{
-    delay(millisec);
-  }
-}
-void initSerial(int PT) {
-  Serial.begin(PT);
-  while (!Serial) {
-    Serial.println("Serial failed, or not connected");
-    delay(1000);
-    return;
-  }
-}
-void initSD(int CS) {
-  while (!SD.begin(CS)) {
-    Serial.println("Card failed, or not present");
-    delay(1000);
-    return;
-  }
-}
-void initWiFi(char ssid[], char pass[]){
-  int status = WL_IDLE_STATUS;     // the WiFi radio's status
-  while ( status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to WPA SSID: ");
-    Serial.println(ssid);
-    status = WiFi.begin(ssid, pass);
-    delay(10000);
-  }
-}
+
 
 void setup() {
   initSerial(9600);
