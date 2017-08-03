@@ -2,10 +2,11 @@
 #include <SD.h>
 #include <Wire.h>
 #include <RTClib.h>
-#include <Adafruit_ASFcore.h>
-#include <Adafruit_SleepyDog.h>
 #include <WiFi101.h>
 #include <ThingerWifi101.h>
+
+String date, sens;
+RTC_PCF8523 rtc;
 
 void initSerial(int PT) {
   Serial.begin(PT);
@@ -29,41 +30,48 @@ void initWiFi(char ssid[], char pass[]){
     delay(1000);
   }
 }
-void sleepTime(float minutes, bool Dog){
+void initRTC(){
+  while (!rtc.begin()) {
+    Serial.println("RTC failed, or not present");
+    delay(1000);
+    return;
+  }
+  if (!rtc.initialized()) {
+    Serial.println("RTC is NOT running!");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+}
+void gotoSleep(float minutes, bool deepSleep){
   int millisec = minutes * 60000;
-  if (Dog){
-    Watchdog.sleep(millisec);
+  Serial.println("going into sleep for " + String(minutes) + " minutes!");
+  if (deepSleep){
+    WiFi.lowPowerMode();
+    delay(millisec);
+    WiFi.noLowPowerMode();
   }
   else{
     delay(millisec);
   }
 }
-void blinkLED(int blink) {
+void blinkLED(int blink, int timer) {
   for (int loop=0; loop<blink; loop++){
 		digitalWrite(LED_BUILTIN, HIGH);
-		delay(1000);
+		delay(timer);
 		digitalWrite(LED_BUILTIN, LOW);
-		delay(1000);
+		delay(timer);
 	}
 }
-
-String readSensor(int PINS){
-  String dataString = "";
-  for (int analogPin = 0; analogPin < PINS; analogPin++) {
-    int sensor = analogRead(analogPin);
-    int mapper = map(sensor, 0, 770, 1, 13000);
-    if (mapper > 13500){
-      mapper = 0;
-    }
-    dataString += String(mapper);
-    if (analogPin < PINS-1) {
-      dataString += ",";
-    }
+int senseIT(int PIN){
+  int sensor = analogRead(PIN);
+  int mapper = map(sensor, 0, 770, 1, 13000);
+  if (mapper > 13500){
+    mapper = 0;
   }
-  return dataString;
+  return mapper;
 }
+
 void writeFILE(String dataString) {
-  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+  File dataFile = SD.open("datalog.csv", FILE_WRITE);
   if (dataFile) {
     dataFile.println(dataString);
     dataFile.close();
@@ -83,17 +91,43 @@ void writeTHING(String dataString){
   thing.write_bucket("FruitGauge", data);
 }
 
-void setup() {
-  blinkLED(10);
-  initSerial(9600);
-  initSD(10);
-  initWiFi("APPLEFY", "orchard1");
+String stringTime(DateTime time_now){
+  String dataString = "";
+  dataString += String(time_now.year(), DEC);
+  dataString += "/";
+  dataString += String(time_now.month(), DEC);
+  dataString += "/";
+  dataString += String(time_now.day(), DEC);
+  dataString += ",";
+  dataString += String(time_now.hour(), DEC);
+  dataString += ":";
+  dataString += String(time_now.minute(), DEC);
+  return dataString;
+}
+String stringSens(int sens_number){
+  String dataString = "";
+  for (int loop=0; loop<sens_number; loop++){
+    dataString += senseIT(loop);
+    if (loop<sens_number-1) {
+      dataString += ",";
+    }
+  }
+  return dataString;
 }
 
+void setup() {
+  initRTC();
+  initSerial(9600);
+  initSD(10);
+  //initWiFi("APPLEFY", "orchard1");
+  blinkLED(10, 250);
+}
 void loop() {
-  String data = readSensor(6);
-  writeFILE(data);
-  writeSERIAL(data);
-  //writeTHING(data);
-  sleepTime(0.1, false);
+  date = stringTime(rtc.now());
+  sens = stringSens(6);
+  writeFILE(date + ",\t\t" + sens);
+  writeSERIAL(date + ",\t\t" + sens);
+  //writeTHING(sens);
+  blinkLED(10,250);
+  gotoSleep(1, false);
 }
