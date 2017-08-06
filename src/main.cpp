@@ -43,7 +43,7 @@ void initRTC(){
 }
 void gotoSleep(float minutes, bool deepSleep){
   int millisec = minutes * 60000;
-  Serial.println("going into sleep for " + String(minutes) + " minutes!");
+  Serial.println("\n\n\ngoing into sleep for " + String(minutes) + " minutes!");
   if (deepSleep){
     WiFi.lowPowerMode();
     delay(millisec);
@@ -71,13 +71,13 @@ int senseIT(int PIN){
 }
 
 void writeFILE(String dataString) {
-  File dataFile = SD.open("datalog.csv", FILE_WRITE);
+  File dataFile = SD.open("datafile.csv", FILE_WRITE);
   if (dataFile) {
     dataFile.println(dataString);
     dataFile.close();
   }
   else {
-    Serial.println("Reading file failed!");
+    Serial.println("Writing datafile failed!");
   }
 }
 void writeSERIAL(String dataString) {
@@ -120,7 +120,6 @@ void setup() {
   initSerial(9600);
   initSD(10);
   //initWiFi("APPLEFY", "orchard1");
-  blinkLED(10, 250);
 }
 void loop() {
   date = stringTime(rtc.now());
@@ -128,6 +127,6 @@ void loop() {
   writeFILE(date + ",\t\t" + sens);
   writeSERIAL(date + ",\t\t" + sens);
   //writeTHING(sens);
-  blinkLED(10,250);
-  gotoSleep(1, false);
+  blinkLED(10,100);
+  gotoSleep(15, false);
 }
